@@ -1,10 +1,6 @@
 # `amd64-gentoo-hpc-cockpit-install.sh` Script
 
-The `amd64-gentoo-hpc-cockpit-install.sh` script installs Cockpit and Performance Co-Pilot (PCP) from source on Gentoo Linux. The script also configures PAM login authentication problems for Cockpit Web Console login, which has been a major stopping point based on research.
-
-## Pending
-
-I want to further debug systemd pmlogger daily and timer service for performance comparisions over time. Likely to just build grafana-pcp into it. This doesn't affect live performance metrics, and meets my use case. 
+The `amd64-gentoo-hpc-cockpit-install.sh` script installs Cockpit and Performance Co-Pilot (PCP) from source on an ~amd64 systemd init driven Gentoo Linux machine. The script also configures PAM login authentication to properly address problems for Cockpit Web Console login, which has been a major stopping point for source based linux distro users. 
 
 ## Background
 
