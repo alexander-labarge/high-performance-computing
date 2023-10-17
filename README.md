@@ -78,9 +78,8 @@ This demonstration showcases the use of Apptainer, a container platform, to crea
 5. Set up an RSYNC server in the container to serve files for the offline networked Gentoo mirror:
    - `emerge rsync`
    - Configure RSYNC server settings in `/etc/rsyncd.conf`.
-   - `echo "Configuration has been written to /etc/rsyncd.conf."`
 6. Perform a final sync of the Gentoo Portage Tree and Gentoo Source Files.
-7. Run the RSYNC server in the container.
+7. Test Run the RSYNC server inside the container.
 8. Test the RSYNC server from outside the container.
 
 ### Security
