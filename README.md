@@ -1,6 +1,6 @@
-# `cockpit_install.sh` Script
+# `amd64-gentoo-hpc-cockpit-install.sh` Script
 
-The `cockpit_install.sh` script installs Cockpit and Performance Co-Pilot (PCP) from source on Gentoo Linux. The script also configures PAM login authentication problems for Cockpit Web Console login, which has been a major stopping point based on research.
+The `amd64-gentoo-hpc-cockpit-install.sh` script installs Cockpit and Performance Co-Pilot (PCP) from source on Gentoo Linux. The script also configures PAM login authentication problems for Cockpit Web Console login, which has been a major stopping point based on research.
 
 ## Pending
 
@@ -18,7 +18,7 @@ There is no official supported ebuild on Gentoo for Cockpit due to several probl
 
 Another issue is that Cockpit is not fully compatible with Gentoo's source-based distribution model. Cockpit is designed to work with binary-based distributions like Red Hat Enterprise Linux, which have pre-built packages available in their repositories. Gentoo, on the other hand, relies on users building packages from source, which can be time-consuming and error-prone.
 
-As a result, there is no official supported ebuild for Cockpit on Gentoo. However, users can still install Cockpit from source using the `cockpit_install.sh` script, which installs Cockpit and Performance Co-Pilot (PCP) from source and configures PAM to allow login to Cockpit.
+As a result, there is no official supported ebuild for Cockpit on Gentoo. However, users can still install Cockpit from source using the `amd64-gentoo-hpc-cockpit-install.sh` script, which installs Cockpit and Performance Co-Pilot (PCP) from source and configures PAM to allow login to Cockpit.
 
 I will be submitting this as an ebuild for Gentoo Linux once refined. 
 
