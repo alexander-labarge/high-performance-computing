@@ -45,3 +45,4 @@ To install Cockpit and PCP from source on Gentoo Linux, follow these steps:
 10. Check the status of the Cockpit service using `sudo systemctl status cockpit.service`.
 
 By following these steps, users can install Cockpit and PCP from source on Gentoo Linux, and configure PAM to allow login to Cockpit.
+![Cockpit](https://github.com/alexander-labarge/hpc-optimizations/assets/103531175/0c8450c6-ddb1-4ec7-81b1-0df25493d9df)
