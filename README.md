@@ -46,3 +46,46 @@ To install Cockpit and PCP from source on Gentoo Linux, follow these steps:
 
 By following these steps, users can install Cockpit and PCP from source on Gentoo Linux, and configure PAM to allow login to Cockpit.
 ![Cockpit](https://github.com/alexander-labarge/hpc-optimizations/assets/103531175/0c8450c6-ddb1-4ec7-81b1-0df25493d9df)
+
+## Demonstration of Apptainer High Performance Computing (HPC) Containerization of Gentoo Linux Source Fiiles
+
+**Author:** Alexander M. La Barge 
+**Date:** 16 Oct 23 - 17 Oct 23
+
+This demonstration showcases the use of Apptainer, a container platform, to create and run containers that package up pieces of software in a way that is portable and reproducible. The specific use case demonstrated is the creation of a Gentoo RSYNC Source Mirror from the Massachusetts Institute of Technology (MIT) for offline distribution of necessary build packages for HPC Cluster in an offline networked environment.
+
+### Requirements
+
+- Apptainer: https://apptainer.org/
+- Docker (optional): Apptainer directly fetches from docker registry/hub.
+- A Linux system to run Apptainer natively. It's easiest to install if you have root access.
+
+### Steps
+
+1. Convert a base Gentoo stage3 image from Docker to Singularity image format (.sif).
+2. Build a container using the converted image.
+3. Launch a writable shell with persistent storage.
+4. Execute the following commands as root in the container:
+   - `emerge --sync`
+   - `emerge net-misc/rsync`
+   - `emerge bash`
+   - `export PS1="\033[1;33mapptainer-root # \w $ \033[0m"`
+   - `mkdir -p /mnt/gentoo-source`
+   - `mkdir -p /mnt/gentoo-portage`
+   - `rsync -av --delete --progress --info=progress2 rsync://mirrors.mit.edu/gentoo-distfiles/ /mnt/gentoo-source`
+   - `cp -r /var/db/repos/gentoo/* /mnt/gentoo-portage`
+5. Set up an RSYNC server in the container to serve files for the offline networked Gentoo mirror:
+   - `emerge rsync`
+   - Configure RSYNC server settings in `/etc/rsyncd.conf`.
+   - `echo "Configuration has been written to /etc/rsyncd.conf."`
+6. Perform a final sync of the Gentoo Portage Tree and Gentoo Source Files.
+7. Run the RSYNC server in the container.
+8. Test the RSYNC server from outside the container.
+
+### Security
+
+By default, the Apptainer containers are user namespaces, so inside the container, you appear as root, but on the host, you're still your regular user. This means you can modify files owned by your user in the sandbox from inside the container, but you won't be able to modify system files unless you've elevated permissions on the host (not typically recommended due to potential security risks).
+
+### Final Storage Footprint
+
+The final storage footprint inside the container (dev/sda mounted to / in container) will depend on the size of the Gentoo Portage Tree and Gentoo Source Files.
