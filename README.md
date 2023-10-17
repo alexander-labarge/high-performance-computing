@@ -82,6 +82,9 @@ This demonstration showcases the use of Apptainer, a container platform, to crea
 7. Test Run the RSYNC server inside the container.
 8. Test the RSYNC server from outside the container.
 
+   ![image](https://github.com/alexander-labarge/hpc-developement/assets/103531175/d1b3c278-7f4a-417a-9042-dde6c829f1ae)
+
+
 ### Security
 
 By default, the Apptainer containers are user namespaces, so inside the container, you appear as root, but on the host, you're still your regular user. This means you can modify files owned by your user in the sandbox from inside the container, but you won't be able to modify system files unless you've elevated permissions on the host (not typically recommended due to potential security risks).
