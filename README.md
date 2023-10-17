@@ -79,30 +79,28 @@ This demonstration showcases the use of Apptainer, a container platform, to crea
    - `emerge rsync`
    - Configure RSYNC server settings in `/etc/rsyncd.conf`.
 
-  ```bash
-cat > /etc/rsyncd.conf <<EOL
-pid file = /var/run/rsyncd.pid
-lock file = /var/run/rsync.lock
-log file = /var/log/rsync.log
-use chroot = yes
-read only = yes
-list = yes
-uid = nobody
-gid = nobody
-max connections = 10
-timeout = 300
-
-[gentoo-portage]
-    path = /mnt/gentoo-portage
-    comment = Gentoo Portage Tree
-
-[gentoo-source]
-    path = /mnt/gentoo-source
-    comment = Gentoo Source Files
-EOL
-```
-`echo "Rsync server configuration established in /etc/rsyncd.conf."`
-
+        ```bash
+      cat > /etc/rsyncd.conf <<EOL
+      pid file = /var/run/rsyncd.pid
+      lock file = /var/run/rsync.lock
+      log file = /var/log/rsync.log
+      use chroot = yes
+      read only = yes
+      list = yes
+      uid = nobody
+      gid = nobody
+      max connections = 10
+      timeout = 300
+      
+      [gentoo-portage]
+          path = /mnt/gentoo-portage
+          comment = Gentoo Portage Tree
+      
+      [gentoo-source]
+          path = /mnt/gentoo-source
+          comment = Gentoo Source Files
+      EOL
+      ```
 6. Perform a final sync of the Gentoo Portage Tree and Gentoo Source Files.
 7. Test Run the RSYNC server inside the container.
 8. Test the RSYNC server from outside the container.
