@@ -116,5 +116,6 @@ By default, the Apptainer containers are user namespaces, so inside the containe
 
 The final storage footprint inside the container (dev/sda mounted to / in container) will depend on the size of the Gentoo Portage Tree and Gentoo Source Files.
 
-![image](https://github.com/alexander-labarge/hpc-developement/assets/103531175/f7b19868-54f9-48c6-8f6f-a2e3b7e9b64b)
+![image](https://github.com/alexander-labarge/hpc-developement/assets/103531175/01470965-2259-4e9b-a499-8d090b47929d)
+
 
