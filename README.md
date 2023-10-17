@@ -4,9 +4,9 @@ The `amd64-gentoo-hpc-cockpit-install.sh` script installs Cockpit and Performanc
 
 ## Background
 
-I am leading the effort to redesign a multi-million dollar HPC cluster. The lack of a user-friendly interface for managing the HPC cluster can be a significant barrier for users who are not familiar with the command-line interface. This can lead to inefficiencies and errors in managing the cluster, which can impact performance and productivity.
+The lack of a user-friendly interface for managing the HPC cluster can be a significant barrier for users who are not familiar with the command-line interface. This can lead to inefficiencies and errors in managing the cluster, which can impact performance and productivity.
 
-The Network Admin Team requested some type of visual oversight of the cluster to be able to monitor power consumption/ power state of the HPC cluster nodes. 
+The CIO requested some type of visual oversight of the cluster to be able to monitor power consumption/ power state of the HPC cluster nodes. 
 
 ## Discussion - Developer Perspective
 
