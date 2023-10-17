@@ -50,7 +50,7 @@ By following these steps, users can install Cockpit and PCP from source on Gento
 # `gentoo-apptainer-offline-mirror.sh` Script
 ## Demonstration of Apptainer High Performance Computing (HPC) Containerization of Gentoo Linux Source Fiiles
 
-**Author:** Alexander M. La Barge 
+**Author:** Alexander M. La Barge <br>
 **Date:** 16 Oct 23 - 17 Oct 23
 
 This demonstration showcases the use of Apptainer, a container platform, to create and run containers that package up pieces of software in a way that is portable and reproducible. The specific use case demonstrated is the creation of a Gentoo RSYNC Source Mirror from the Massachusetts Institute of Technology (MIT) for offline distribution of necessary build packages for HPC Cluster in an offline networked environment.
