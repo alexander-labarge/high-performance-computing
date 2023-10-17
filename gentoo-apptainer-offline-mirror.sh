@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Gentoo RSYNC Source Mirror Apptainer Image Build Script
-# Author: La Barge, Alexander, M., Cryptanalysis Engineering Lead, SAIC
+# Author: La Barge, Alexander
 # Date: 16 Oct 23 - 17 Oct 23
 
 echo "Setting up Gentoo RSYNC Source Mirror using Apptainer..."
