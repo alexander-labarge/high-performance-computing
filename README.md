@@ -118,4 +118,15 @@ The final storage footprint inside the container (dev/sda mounted to / in contai
 
 ![image](https://github.com/alexander-labarge/hpc-developement/assets/103531175/01470965-2259-4e9b-a499-8d090b47929d)
 
+### Image Verification (Integrity and Authenticity)
 
+Signing the image is perhaps one of the most important aspect of both docker and apptainer container verification. In this way, we can verify the authenticity of this image. See more at: https://apptainer.org/docs/user/latest/signNverify.html
+
+Steps:
+1. Generate the key (GNU GPG RSA 4096):
+  - `apptainer key newpair`
+2. Sign the image you have created:
+  - `sudo apptainer sign gentoo_mirror_17Oct23.sif`
+3. Inspect the image to ensure signature has been applied:
+  - `sudo apptainer inspect gentoo_mirror_17Oct23.sif`
+   
