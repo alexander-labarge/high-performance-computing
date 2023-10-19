@@ -46,7 +46,6 @@ To install Cockpit and PCP from source on Gentoo Linux, follow these steps:
 
 By following these steps, users can install Cockpit and PCP from source on Gentoo Linux, and configure PAM to allow login to Cockpit.
 ![Cockpit](https://github.com/alexander-labarge/hpc-optimizations/assets/103531175/0c8450c6-ddb1-4ec7-81b1-0df25493d9df)
-
 # `gentoo-apptainer-offline-mirror.sh` Script
 ## Demonstration of Apptainer High Performance Computing (HPC) Containerization of Gentoo Linux Source Files
 
@@ -54,6 +53,9 @@ By following these steps, users can install Cockpit and PCP from source on Gento
 **Date:** 17 Oct 23
 
 This demonstration showcases the use of Apptainer, a container platform, to create and run containers that package up pieces of software in a way that is portable and reproducible. The specific use case demonstrated is the creation of a Gentoo RSYNC Source Mirror from the Massachusetts Institute of Technology (MIT) for offline distribution of necessary build packages for HPC Cluster in an offline networked environment.
+
+![image](https://github.com/alexander-labarge/hpc-development/assets/103531175/620a33aa-2532-4d48-917e-8dd6b539f062)
+
 
 ### Requirements
 
@@ -63,10 +65,18 @@ This demonstration showcases the use of Apptainer, a container platform, to crea
 
 ### Steps
 
-1. Convert a base Gentoo stage3 image from Docker to Singularity image format (.sif).
+1. Convert a base Gentoo stage3 image from Docker to Singularity image format (.sif). Below command converts a base gentoo stage3 image from docker to singularity    image format (.sif). This is a finalized image which can be broken back down later/ altered as needed. When all is complete, I will sign the build, and compile it for distro. This is just to have a working image for later since we will create an automated build script to not have to do this every time.
+![image](https://github.com/alexander-labarge/hpc-development/assets/103531175/6b7c0e09-7aeb-4e82-97f2-e89b1d220856)
+
 2. Build a container using the converted image.
+   - `apptainer pull docker://gentoo/stage3:amd64-systemd-20231016`
+   - `apptainer build --sandbox ./sandbox-writeable-build docker://gentoo/stage3:amd64-systemd-20231016`
+   ![image](https://github.com/alexander-labarge/hpc-development/assets/103531175/b8c1c07a-f8e0-46e4-8a5f-6cedfa5a2f52)
 3. Launch a writable shell with persistent storage.
-4. Execute the following commands as root in the container:
+   - `apptainer shell -w ./sandbox-writeable-build/`
+   ![image](https://github.com/alexander-labarge/hpc-development/assets/103531175/1734fdd0-4bab-42a7-bdf4-b602eb3f7d82)
+
+6. Execute the following commands as root in the container:
    - `emerge --sync`
    - `emerge net-misc/rsync`
    - `emerge bash`
@@ -75,7 +85,9 @@ This demonstration showcases the use of Apptainer, a container platform, to crea
    - `mkdir -p /mnt/gentoo-portage`
    - `rsync -av --delete --progress --info=progress2 rsync://mirrors.mit.edu/gentoo-distfiles/ /mnt/gentoo-source`
    - `cp -r /var/db/repos/gentoo/* /mnt/gentoo-portage`
-5. Set up an RSYNC server in the container to serve files for the offline networked Gentoo mirror:
+   ![image](https://github.com/alexander-labarge/hpc-development/assets/103531175/084ee95a-27f2-4997-929d-14949ae5cc49)
+
+7. Set up an RSYNC server in the container to serve files for the offline networked Gentoo mirror:
    - `emerge rsync`
    - Configure RSYNC server settings in `/etc/rsyncd.conf`.
 
@@ -101,9 +113,9 @@ This demonstration showcases the use of Apptainer, a container platform, to crea
           comment = Gentoo Source Files
       EOL
       ```
-6. Perform a final sync of the Gentoo Portage Tree and Gentoo Source Files.
-7. Test Run the RSYNC server inside the container.
-8. Test the RSYNC server from outside the container.
+8. Perform a final sync of the Gentoo Portage Tree and Gentoo Source Files.
+9. Test Run the RSYNC server inside the container.
+10. Test the RSYNC server from outside the container.
 
    ![image](https://github.com/alexander-labarge/hpc-developement/assets/103531175/d1b3c278-7f4a-417a-9042-dde6c829f1ae)
 
@@ -129,4 +141,3 @@ Steps:
   - `sudo apptainer sign gentoo_mirror_17Oct23.sif`
 3. Inspect the image to ensure signature has been applied:
   - `sudo apptainer inspect gentoo_mirror_17Oct23.sif`
-   
