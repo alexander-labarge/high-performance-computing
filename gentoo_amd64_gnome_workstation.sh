@@ -131,7 +131,7 @@ function format_filesystems() {
 
     # Formatting the Root partition
     einfo "Formatting root partition..."
-    mkfs.xfs -F "/dev/${DRIVE}3"
+    mkfs.xfs -f "/dev/${DRIVE}3"
     einfo "Root partition formatted."
 
     countdown_timer
@@ -207,19 +207,19 @@ ensure_directory() {
 }
 
 # Set up environment
+cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
+chroot /mnt/gentoo /bin/bash
 source /etc/profile
 export PS1="(darth-root) ${PS1}"
 
 
 # Prepare system
-ensure_directory /efi
-mount /dev/sda1 /efi
 emerge --sync
 
 # Configure system
 echo 'ACCEPT_LICENSE="*"' >> "$MAKECONF"
 echo 'VIDEO_CARDS="nvidia"' >> "$MAKECONF"
-echo 'USE="X grub -qt5 -kde gtk gnome -gnome-online-accounts"' "$MAKECONF"
+echo 'USE="X grub -qt5 -kde gtk gnome -gnome-online-accounts"' >> "$MAKECONF"
 
 ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 echo "en_US UTF-8" > /etc/locale.gen
@@ -229,7 +229,7 @@ locale-gen
 echo "LANG=\"$LOCALE\"" > /etc/env.d/02locale
 echo "LC_COLLATE=\"$COLLATE\"" >> /etc/env.d/02locale
 
-env-update && source /etc/profile
+env-update && source /etc/profile && export PS1="(skywalker-chroot) ${PS1}"
 
 # Define package and USE flags
 PACKAGE="x11-drivers/nvidia-drivers"
@@ -268,6 +268,7 @@ fi
 # Update make.conf with optimized CPU flags
 sed -i "/^COMMON_FLAGS/c\COMMON_FLAGS=\"-O2 -pipe ${OPTIMIZED_FLAGS}\"" "$MAKECONF"
 sed -i 's/COMMON_FLAGS="\(.*\)"/COMMON_FLAGS="\1"/;s/  */ /g' "$MAKECONF"
+sed -i 's/COMMON_FLAGS="\(.*\) *"/COMMON_FLAGS="\1"/' "$MAKECONF"
 
 # Assign MAKEOPTS automatically
 NUM_CORES=$(nproc)
@@ -286,7 +287,7 @@ echo "Finished updating USE flags for all packages and system specific options"
 # Additional commands
 eselect profile list
 eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd/merged-usr
-emerge --ask --verbose --update --deep --newuse @world
+emerge --verbose --update --deep --newuse @world
 emerge --depclean
 
 echo "Initial Rebuild Complete"
@@ -435,10 +436,10 @@ cat /etc/ssh/ssh_host_*
 countdown_timer
 
 # Set the desired keymap (us = option 242)
-KEYMAP=us
+KEYMAP="us"
 
 # Set the hostname (change to your desired hostname)
-HOSTNAME=deathstar
+HOSTNAME="deathstar"
 
 # Run systemd-firstboot with the chosen keymap and hostname
 systemd-firstboot --prompt --locale=en_US.UTF-8 --keymap=$KEYMAP --hostname=$HOSTNAME
@@ -449,45 +450,68 @@ systemctl enable getty@tty1.service
 systemctl enable sshd
 systemctl enable systemd-timesyncd.service
 
-
-#!/bin/bash
-
-# Ensure the script is run as root
-if [ "$(id -u)" -ne 0 ]; then
-   echo "This script must be run as root" 
-   exit 1
-fi
-
-emerge --ask --verbose --update --deep --newuse @world
+emerge --verbose --update --deep --newuse @world
 
 # Resolve circular dependencies
-echo "Resolving circular dependencies for libpulse..."
-USE="minimal" emerge --ask --oneshot libsndfile
+# echo "Resolving circular dependencies for libpulse..."
+# USE="minimal" emerge --ask --oneshot libsndfile
 
-ACCEPT_KEYWORDS="~amd64" emerge --oneshot --verbose --autounmask-continue=y x11-drivers/nvidia-drivers
+NVIDIA_DRIVER="x11-drivers/nvidia-drivers"
+ACCEPT_KEYWORDS_DIR="/etc/portage/package.accept_keywords"
+ACCEPT_KEYWORDS_FILE="$ACCEPT_KEYWORDS_DIR/nvidia-drivers"
 
+# Ensure the /etc/portage/package.accept_keywords directory exists
+if [ ! -d "$ACCEPT_KEYWORDS_DIR" ]; then
+    echo "Creating directory $ACCEPT_KEYWORDS_DIR"
+    mkdir -p "$ACCEPT_KEYWORDS_DIR"
+fi
+
+# Set the ~amd64 keyword for the package
+echo "$NVIDIA_DRIVER ~amd64" >> "$ACCEPT_KEYWORDS_FILE"
+echo "Added ~amd64 keyword for $NVIDIA_DRIVER"
+
+# Install the package
+emerge --verbose --autounmask-continue=y "$NVIDIA_DRIVER"
+
+# Build NVIDIA Experimental Modules into Kernel
+echo "Building NVIDIA experimental kernel modules..."
+emerge @module-rebuild
 
 # Disable previewer for nautilus and remove GNOME online accounts
+# This aids in privacy and security addressed in CVE-2018-17183
 echo "Configuring nautilus and GNOME online accounts..."
 mkdir -p /etc/portage/package.use
 echo "gnome-base/nautilus -previewer" > /etc/portage/package.use/nautilus
 
 # Install GNOME
 echo "Installing GNOME..."
-emerge --ask --verbose --autounmask-continue=y gnome-base/gnome
+# Resolve circular dependencies
+USE="minimal" emerge --verbose --oneshot libsndfile
+
+emerge --verbose --autounmask-continue=y gnome-base/gnome
 # Uncomment below for minimal GNOME installation
 # emerge --ask gnome-base/gnome-light
 
-
-
 # Update environment variables
 echo "Updating environment variables..."
-env-update && source /etc/profile
 
-# Add user to plugdev group
-echo "Adding user $USER to plugdev group..."
-getent group plugdev
-gpasswd -a $USER plugdev
+env-update && source /etc/profile && export PS1="(skywalker-chroot) ${PS1}"
+
+# Add All Users to Plugdev group
+# Check if the plugdev group exists
+if getent group plugdev > /dev/null; then
+    echo "The plugdev group exists. Adding users to the group..."
+    
+    # Get all users with a login shell (typically regular users)
+    for USER in $(awk -F: '$7~/\/bin\/bash|\/bin\/sh/ {print $1}' /etc/passwd); do
+        echo "Adding user $USER to plugdev group..."
+        gpasswd -a "$USER" plugdev
+    done
+
+    echo "All users have been added to the plugdev group."
+else
+    echo "The plugdev group does not exist. Please create the group first."
+fi
 
 # Configure display manager (GDM)
 if systemctl > /dev/null 2>&1; then
@@ -507,9 +531,6 @@ else
 fi
 
 echo "Configuration complete."
-
-
-
 
 # ADDITIONAL OPTIONAL PACKAGES
 
