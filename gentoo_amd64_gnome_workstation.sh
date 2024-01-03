@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Constants
+TIMEZONE="America/New_York"
+LOCALE="en_US.UTF-8"
+COLLATE="C"
+MAKECONF="/etc/portage/make.conf"
+PACKAGE_CONF="/etc/portage/package.use/custom"
+DRIVE="sda"
+STAGE3_URL="https://distfiles.gentoo.org/releases/amd64/autobuilds/20231231T163203Z/stage3-amd64-desktop-systemd-mergedusr-20231231T163203Z.tar.xz"
+
 # Define the einfo function for the chroot environment
 function einfo() {
     local blue='\e[1;34m'   # Light blue
@@ -62,12 +71,135 @@ function countdown_timer() {
     done
 }
 
-# Constants
-TIMEZONE="America/New_York"
-LOCALE="en_US.UTF-8"
-COLLATE="C"
-MAKECONF="/etc/portage/make.conf"
-PACKAGE_CONF="/etc/portage/package.use/custom"
+function configure_disks() {
+    # Display drive layout
+    einfo "Drive Layout:"
+    lsblk /dev/$DRIVE
+
+    # Confirm with the user before proceeding
+    read -p "Do you want to proceed with formatting this drive? (y/n): " confirm
+    if [ "$confirm" != "y" ]; then
+        einfo "Partitioning aborted by user."
+        exit 1
+    fi
+
+    einfo "Setting up partitions on /dev/$DRIVE..."
+
+    # Start fdisk to partition the drive
+    { 
+        echo g; # Create a new empty GPT partition table
+        echo n; # New partition for EFI
+        echo 1; # Partition number 1
+        echo ;  # Default first sector
+        echo +1G; # 1 GB for the EFI partition
+        echo t; # Change partition type
+        echo 1; # Partition type 1 (EFI System)
+        echo n; # New partition for Swap
+        echo 2; # Partition number 2
+        echo ;  # Default first sector
+        echo +16G; # 16 GB for the swap partition
+        echo n; # New partition for Root
+        echo 3; # Partition number 3
+        echo ;  # Default first sector
+        echo ;  # Use the remaining space for the root partition
+        echo w; # Write changes
+    } | fdisk /dev/$DRIVE
+
+    # After creating all the partitions
+    partprobe /dev/$DRIVE
+
+    einfo "Disk partitioning complete."
+
+    countdown_timer
+}
+
+function format_filesystems() {
+    # Formatting the EFI partition as FAT32
+    einfo "Formatting EFI partition..."
+    mkfs.vfat -F32 "/dev/${DRIVE}1"
+    einfo "EFI partition formatted."
+
+    countdown_timer
+
+    # Formatting the Swap partition
+    einfo "Setting up swap space..."
+    mkswap "/dev/${DRIVE}2"
+    swapon "/dev/${DRIVE}2"
+    einfo "Swap space set up."
+
+    countdown_timer
+
+    # Formatting the Root partition
+    einfo "Formatting root partition..."
+    mkfs.xfs -F "/dev/${DRIVE}3"
+    einfo "Root partition formatted."
+
+    countdown_timer
+
+    einfo "Filesystems formatted."
+
+    countdown_timer
+}
+
+function mount_file_systems() {
+    einfo "Mounting filesystems..."
+    
+    # Mount root partition
+    einfo "Creating root mount point at /mnt/gentoo..."
+    mkdir -p "/mnt/gentoo"
+    einfo "Root mount point created."
+    mount "/dev/${DRIVE}3" "/mnt/gentoo"
+    einfo "Mounted root partition."
+
+    # Mount EFI partition
+    einfo "Making EFI directory at /efi..."
+    mkdir -p "/mnt/gentoo/efi"
+    einfo "EFI directory created."
+    mount "/dev/${DRIVE}1" "/mnt/gentoo/efi"
+    einfo "Mounted EFI partition."
+
+    einfo "Filesystems mounted."
+
+    countdown_timer
+}
+
+function download_and_extract_stage3() {
+    einfo "Downloading Gentoo stage3 tarball..."
+ 
+    # Download the stage3 tarball
+    wget "$STAGE3_URL" -O "/mnt/gentoo/stage3-amd64-desktop-systemd-mergedusr-20231231T163203Z.tar.xz"
+
+    # Check if the download was successful
+    if [ ! -f "/mnt/gentoo/stage3-amd64-desktop-systemd-mergedusr-20231231T163203Z.tar.xz" ]; then
+        eerror "Download failed, exiting."
+        exit 1
+    fi
+
+    einfo "Extracting stage3 tarball..."
+    tar xpvf "/mnt/gentoo/stage3-amd64-desktop-systemd-mergedusr-20231231T163203Z.tar.xz" --xattrs-include='*.*' --numeric-owner -C /mnt/gentoo
+
+    einfo "Stage3 tarball extracted."
+
+    countdown_timer
+}
+
+configure_disks
+format_filesystems
+mount_file_systems
+download_and_extract_stage3
+
+# Mount System Devices
+
+mount --types proc /proc /mnt/gentoo/proc
+mount --rbind /sys /mnt/gentoo/sys
+mount --make-rslave /mnt/gentoo/sys
+mount --rbind /dev /mnt/gentoo/dev
+mount --make-rslave /mnt/gentoo/dev
+mount --bind /run /mnt/gentoo/run
+mount --make-slave /mnt/gentoo/run 
+
+
+
 
 # Function to create directories if they don't exist
 ensure_directory() {
@@ -87,7 +219,7 @@ emerge --sync
 # Configure system
 echo 'ACCEPT_LICENSE="*"' >> "$MAKECONF"
 echo 'VIDEO_CARDS="nvidia"' >> "$MAKECONF"
-echo 'USE="X"' >> "$MAKECONF"
+echo 'USE="X grub -qt5 -kde gtk gnome -gnome-online-accounts"' "$MAKECONF"
 
 ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 echo "en_US UTF-8" > /etc/locale.gen
@@ -140,7 +272,7 @@ sed -i 's/COMMON_FLAGS="\(.*\)"/COMMON_FLAGS="\1"/;s/  */ /g' "$MAKECONF"
 # Assign MAKEOPTS automatically
 NUM_CORES=$(nproc)
 MAKEOPTS_VALUE=$((NUM_CORES + 1))
-echo "MAKEOPTS=\"-j${MAKEOPTS_VALUE}\"" >> "$MAKECONF"
+echo "MAKEOPTS=\"-j${MAKEOPTS_VALUE} -l$(nproc)\"" >> "$MAKECONF"
 
 echo "make.conf has been updated successfully."
 echo "Flags added were: ${OPTIMIZED_FLAGS}"
@@ -153,13 +285,13 @@ echo "Finished updating USE flags for all packages and system specific options"
 
 # Additional commands
 eselect profile list
-eselect profile set 8
+eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd/merged-usr
 emerge --ask --verbose --update --deep --newuse @world
 emerge --depclean
 
 echo "Initial Rebuild Complete"
 
-env-update && source /etc/profile && export PS1="(darth-root) ${PS1}"
+env-update && source /etc/profile && export PS1="(skywalker-chroot) ${PS1}"
 
 echo "Install Firmware + Microcode"
 
@@ -326,15 +458,6 @@ if [ "$(id -u)" -ne 0 ]; then
    exit 1
 fi
 
-# Update USE flags Before Building Stage 4 of OS
-
-echo "Updating USE flags in /etc/portage/make.conf..."
-echo 'USE="X grub -qt5 -kde gtk gnome -gnome-online-accounts systemd"' > /etc/portage/make.conf
-
-# Select systemd profile for GNOME
-echo "Selecting the systemd profile for GNOME..."
-eselect profile set default/linux/amd64/17.1/desktop/gnome/systemd
-
 emerge --ask --verbose --update --deep --newuse @world
 
 # Resolve circular dependencies
@@ -343,16 +466,19 @@ USE="minimal" emerge --ask --oneshot libsndfile
 
 ACCEPT_KEYWORDS="~amd64" emerge --oneshot --verbose --autounmask-continue=y x11-drivers/nvidia-drivers
 
-# Install GNOME
-echo "Installing GNOME..."
-emerge --ask gnome-base/gnome
-# Uncomment below for minimal GNOME installation
-# emerge --ask gnome-base/gnome-light
 
 # Disable previewer for nautilus and remove GNOME online accounts
 echo "Configuring nautilus and GNOME online accounts..."
 mkdir -p /etc/portage/package.use
 echo "gnome-base/nautilus -previewer" > /etc/portage/package.use/nautilus
+
+# Install GNOME
+echo "Installing GNOME..."
+emerge --ask --verbose --autounmask-continue=y gnome-base/gnome
+# Uncomment below for minimal GNOME installation
+# emerge --ask gnome-base/gnome-light
+
+
 
 # Update environment variables
 echo "Updating environment variables..."
