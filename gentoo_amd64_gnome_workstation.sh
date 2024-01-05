@@ -210,7 +210,7 @@ ensure_directory() {
 cp --dereference /etc/resolv.conf /mnt/gentoo/etc/
 chroot /mnt/gentoo /bin/bash
 source /etc/profile
-export PS1="(darth-root) ${PS1}"
+export PS1="(skywalker-chroot) ${PS1}"
 
 
 # Prepare system
@@ -308,7 +308,7 @@ emerge --verbose --autounmask-continue=y sys-kernel/gentoo-kernel-bin
 
 emerge --depclean
 
-env-update && source /etc/profile && export PS1="(darth-root) ${PS1}"
+env-update && source /etc/profile && export PS1="(skywalker-chroot) ${PS1}"
 
 # FSTAB GENERATION
 
@@ -451,10 +451,12 @@ systemctl enable sshd
 systemctl enable systemd-timesyncd.service
 
 emerge --verbose --update --deep --newuse @world
+emerge --depclean
 
-# Resolve circular dependencies
-# echo "Resolving circular dependencies for libpulse..."
-# USE="minimal" emerge --ask --oneshot libsndfile
+# X11 + GNOME Installation
+
+echo -e "# required by standard X-server installation\nmedia-libs/mesa xa" >> /etc/portage/package.use/mesa
+emerge --autounmask-continue=y --verbose x11-base/xorg-drivers x11-base/xorg-server
 
 NVIDIA_DRIVER="x11-drivers/nvidia-drivers"
 ACCEPT_KEYWORDS_DIR="/etc/portage/package.accept_keywords"
@@ -531,6 +533,65 @@ else
 fi
 
 echo "Configuration complete."
+
+# Install and configure GRUB
+
+einfo "Setting up GRUB for UEFI booting"
+# Add GRUB UEFI support to make.conf
+echo 'GRUB_PLATFORMS="efi-64"' >> /etc/portage/make.conf
+einfo "GRUB UEFI support added to make.conf"
+
+countdown_timer
+
+einfo "Emerging GRUB bootloader"
+# Install GRUB package
+emerge --verbose --autounmask-continue=y sys-boot/grub || { einfo "Failed to emerge GRUB"; exit 1; }
+
+countdown_timer
+
+einfo "Installing GRUB bootloader to EFI System Partition"
+einfo "--removable option is used to ensure that the EFI bootloader can be portable"
+einfo "This creates the 'default' directory defined by the UEFI specification."
+einfo "We then create a file with the default name: BOOTX64.EFI."
+einfo "This ensures that the UEFI firmware will load GRUB."
+
+countdown_timer
+
+
+# Install GRUB to the EFI directory
+grub-install --target=x86_64-efi --efi-directory=/efi || { einfo "Failed to install GRUB"; exit 1; }
+einfo "GRUB bootloader installation complete"
+
+countdown_timer
+
+einfo "Generating GRUB configuration file"
+#OS_PROBER_LINE="GRUB_DISABLE_OS_PROBER=false"
+#echo "$OS_PROBER_LINE" | tee -a /etc/default/grub
+# Generate GRUB config
+grub-mkconfig -o /boot/grub/grub.cfg || { einfo "Failed to generate GRUB config"; exit 1; }
+einfo "GRUB configuration file generation complete"
+
+
+countdown_timer
+
+einfo "Bootloader setup complete"
+
+
+
+if umount -l /mnt/gentoo/dev{/shm,/pts,} && umount -R /mnt/gentoo; then
+            einfo "Filesystems unmounted successfully."
+        else
+            eerror "Failed to unmount some filesystems."
+            return 1
+        fi
+
+
+
+
+
+
+
+
 
 # ADDITIONAL OPTIONAL PACKAGES
 
