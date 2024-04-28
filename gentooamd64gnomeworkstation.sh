@@ -118,7 +118,7 @@ sudo chronyd -q
 cd /mnt/gentoo
 
 # Define the URL to fetch the latest stage3 tarball
-STAGE3_URL="https://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64-desktop-systemd-mergedusr.txt"
+STAGE3_URL="https://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64-desktop-systemd.txt"
 
 # Fetch the latest stage3 tarball URL using curl and grep
 STAGE3_FILE=$(curl -s $STAGE3_URL | grep -m1 -oP '\d+T\d+Z/stage3-.*\.tar\.xz')
